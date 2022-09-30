@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/tedbearr/react-go/entity"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -29,7 +30,7 @@ func DbConnection() *gorm.DB {
 		panic("Failed to create connection to database")
 	}
 
-	db.AutoMigrate()
+	db.AutoMigrate(&entity.User{}, &entity.Posts{})
 	return db
 }
 
