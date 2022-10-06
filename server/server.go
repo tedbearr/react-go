@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/tedbearr/react-go/config"
 	"github.com/tedbearr/react-go/controller"
@@ -19,6 +20,8 @@ var (
 
 func main() {
 	r := gin.Default()
+
+	r.Use(cors.Default())
 
 	authRoutes := r.Group("api/auth")
 	{

@@ -76,11 +76,61 @@ func (controller *postController) Insert(context *gin.Context) {
 }
 
 func (controller *postController) Update(context *gin.Context) {
-
+	var postUpdateDTO dto.PostsUpdateDTO
+	errDTO := context.ShouldBind((&postUpdateDTO))
+	if errDTO != nil {
+		res := helper.BuildErrorResponse("Failed to process request", errDTO.Error(), helper.EmptyObj{})
+		context.AbortWithStatusJSON(http.StatusBadRequest, res)
+		return
+	}
+	authHeader := context.GetHeader("Authorization")
+	token, errToken := controller.jwtService.ValidateToken(authHeader)
+	if errToken != nil {
+		panic(errToken.Error())
+	}
+	postID, err := strconv.ParseUint(context.Param("id"), 0, 64)
+	if err != nil {
+		postUpdateDTO.ID = postID
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	userID := fmt.Sprintf("%v", claims["user_id"])
+	if controller.postService.IsAllowedToEdit(userID, postUpdateDTO.ID) {
+		id, errID := strconv.ParseUint(userID, 10, 64)
+		if errID != nil {
+			postUpdateDTO.UserID = id
+		}
+		result := controller.postService.Update(postUpdateDTO)
+		res := helper.BuildResponse(true, "oke", result)
+		context.JSON(http.StatusOK, res)
+	} else {
+		res := helper.BuildErrorResponse("You dont have permission", "you are not owner", helper.EmptyObj{})
+		context.JSON(http.StatusForbidden, res)
+	}
 }
 
 func (controller *postController) Delete(context *gin.Context) {
-
+	var post entity.Posts
+	id, err := strconv.ParseUint(context.Param("id"), 10, 64)
+	if err != nil {
+		res := helper.BuildErrorResponse("failed to get param id", "please insert param id", helper.EmptyObj{})
+		context.JSON(http.StatusBadRequest, res)
+	}
+	authHeader := context.GetHeader("Authorization")
+	token, errToken := controller.jwtService.ValidateToken(authHeader)
+	if errToken != nil {
+		panic(errToken.Error())
+	}
+	post.ID = id
+	claims := token.Claims.(jwt.MapClaims)
+	userID := fmt.Sprintf("%v", claims["user_id"])
+	if controller.postService.IsAllowedToEdit(userID, post.ID) {
+		controller.postService.Delete(post)
+		res := helper.BuildResponse(true, "deleted", helper.EmptyObj{})
+		context.JSON(http.StatusOK, res)
+	} else {
+		res := helper.BuildErrorResponse("you dont have permission", "you are not the owner", helper.EmptyObj{})
+		context.JSON(http.StatusForbidden, res)
+	}
 }
 
 func (controller *postController) GetUserIdByToken(token string) string {

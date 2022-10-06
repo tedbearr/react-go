@@ -67,3 +67,7 @@ func (c *authController) Register(ctx *gin.Context) {
 		ctx.JSON(http.StatusCreated, res)
 	}
 }
+
+func (c *authController) Logout(ctx *gin.Context) {
+
+}
